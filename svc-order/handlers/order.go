@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"svc-order/async"
 	"svc-order/dto"
-	"time"
+	"svc-order/persistence"
 )
 
 type OrderHandler struct {
@@ -21,35 +21,28 @@ func NewOrderHandler(producer async.Producer) *OrderHandler {
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	var order dto.Order
+	var orderReq dto.Order
 
-	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&orderReq); err != nil {
 		log.Printf("Error decoding order: %v", err)
 		http.Error(w, "Invalid request JSON", http.StatusBadRequest)
 		return
 	}
 
-	// repo := persistence.NewRepository()
-	// orderID, err := repo.CreateOrder(order.ItemID, order.BuyerAddress, order.Status)
-	//
-	// if err != nil {
-	// 	log.Printf("failed to persist order: id %d: %v", orderID, err)
-	// 	http.Error(w, fmt.Sprintf("failed to persist order: %v", err), http.StatusInternalServerError)
-	// 	return
-	// }
+	repo := persistence.NewRepository()
+	order, err := repo.CreateOrder(orderReq.ItemID, orderReq.BuyerAddress, orderReq.Status)
 
-	orderID := fmt.Sprintf("order-%d", time.Now().Unix())
-	orderEvent := dto.OrderEvent{
-		Type:         "created",
-		OrderID:      orderID,
-		BuyerAddress: order.BuyerAddress,
-		ItemID:       order.ItemID,
-		Status:       "pending",
+	if err != nil {
+		log.Printf("failed to persist order: %v", err)
+		http.Error(w, fmt.Sprintf("failed to persist order: %v", err), http.StatusInternalServerError)
+		return
 	}
+
+	orderEvent := order.NewEvent("order_created")
 
 	log.Printf("publishing event: %+v", orderEvent)
 
-	if err := h.Producer.PublishEvent("order", orderID, orderEvent); err != nil {
+	if err := h.Producer.PublishEvent(orderEvent.Key, orderEvent.Headers, orderEvent.Payload); err != nil {
 		log.Printf("error publishing order event: %v", err)
 		http.Error(w, fmt.Sprintf("Failed to process order: %v", err), http.StatusInternalServerError)
 		return

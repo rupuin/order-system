@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"svc-order/dto"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -19,20 +20,19 @@ func NewRepository() *Repository {
 	}
 }
 
-func (r *Repository) CreateOrder(itemID, address, status string) (int, error) {
+func (r *Repository) CreateOrder(itemID, address, status string) (*dto.Order, error) {
 	query := `
 	INSERT INTO orders (item_id, address, status)
 	VALUES ($1, $2, $3)
-	RETURNING id
+	RETURNING (id, item_id, address, status, created_at, updated_at)
 	`
-
-	var orderID int
-	err := r.db.QueryRow(context.Background(), query, itemID, address, status).Scan(&orderID)
+	var order dto.Order
+	err := r.db.QueryRow(context.Background(), query, itemID, address, status).Scan(&order)
 	if err != nil {
-		return 0, fmt.Errorf("failed to create order: %w", err)
+		return nil, err
 	}
 
-	return orderID, nil
+	return &order, nil
 }
 
 func (r *Repository) UpdateOrderStatus(orderID, newStatus string) (int, error) {
