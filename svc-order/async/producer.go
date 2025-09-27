@@ -9,35 +9,53 @@ import (
 )
 
 type Producer interface {
-	PublishEvent(topic, key string, event any) error
-}
-
-func NewProducer(brokers []string) Producer {
-	return &kafkaProducer{brokers: brokers}
+	PublishEvent(key string, headers map[string]string, payload any) error
 }
 
 type kafkaProducer struct {
 	brokers []string
+	topic   string
+	writer  *kafka.Writer
 }
 
-func (p *kafkaProducer) PublishEvent(topic, key string, event any) error {
-	writer := &kafka.Writer{
-		Addr:     kafka.TCP(p.brokers...),
-		Topic:    topic,
-		Balancer: &kafka.LeastBytes{},
+func NewProducer(brokers []string, topic string) Producer {
+	return &kafkaProducer{
+		brokers: brokers,
+		topic:   topic,
+		writer: &kafka.Writer{
+			Addr:     kafka.TCP(brokers...),
+			Topic:    topic,
+			Balancer: &kafka.LeastBytes{},
+		},
 	}
+}
 
-	defer writer.Close()
+func (p *kafkaProducer) PublishEvent(key string, headers map[string]string, payload any) error {
+	// writer := &kafka.Writer{
+	// 	Addr:     kafka.TCP(p.brokers...),
+	// 	Topic:    topic,
+	// 	Balancer: &kafka.LeastBytes{},
+	// }
 
-	eventJSON, err := json.Marshal(event)
+	var kafkaHeaders []kafka.Header
+	for key, value := range headers {
+		kafkaHeaders = append(kafkaHeaders, kafka.Header{
+			Key:   key,
+			Value: []byte(value),
+		})
+	}
+	defer p.writer.Close()
+
+	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("Error marshalling event: %v", err)
 	}
 
-	err = writer.WriteMessages(context.Background(),
+	err = p.writer.WriteMessages(context.Background(),
 		kafka.Message{
-			Key:   []byte(key),
-			Value: eventJSON,
+			Key:     []byte(key),
+			Value:   payloadJSON,
+			Headers: kafkaHeaders,
 		},
 	)
 
