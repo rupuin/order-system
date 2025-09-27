@@ -46,7 +46,7 @@ func startOrderConsumer(ctx context.Context, wg *sync.WaitGroup) {
 		defer wg.Done()
 		consumer := async.NewConsumer(
 			async.GetBrokers(),
-			"order",
+			"order_events",
 			"inventory-group",
 		)
 		defer consumer.Close()

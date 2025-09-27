@@ -43,6 +43,7 @@ func (c *kafkaConsumer) ProcessMessages(ctx context.Context, handler MessageHand
 		default:
 			msgCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			kafkaMsg, err := c.reader.ReadMessage(msgCtx)
+			log.Printf("Received message: key=%s, offset=%d", string(kafkaMsg.Key), kafkaMsg.Offset)
 			cancel()
 			if err != nil {
 				if errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), "deadline exceeded") {
@@ -51,8 +52,6 @@ func (c *kafkaConsumer) ProcessMessages(ctx context.Context, handler MessageHand
 				log.Printf("Error reading message: %v", err)
 				continue
 			}
-
-			log.Printf("Received message: key=%s, offset=%d", string(kafkaMsg.Key), kafkaMsg.Offset)
 
 			message := &kafkaMessage{
 				key:   string(kafkaMsg.Key),
