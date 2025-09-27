@@ -10,6 +10,7 @@ import (
 
 type Producer interface {
 	PublishEvent(key string, headers map[string]string, payload any) error
+	Close() error
 }
 
 type kafkaProducer struct {
@@ -31,12 +32,6 @@ func NewProducer(brokers []string, topic string) Producer {
 }
 
 func (p *kafkaProducer) PublishEvent(key string, headers map[string]string, payload any) error {
-	// writer := &kafka.Writer{
-	// 	Addr:     kafka.TCP(p.brokers...),
-	// 	Topic:    topic,
-	// 	Balancer: &kafka.LeastBytes{},
-	// }
-
 	var kafkaHeaders []kafka.Header
 	for key, value := range headers {
 		kafkaHeaders = append(kafkaHeaders, kafka.Header{
@@ -44,7 +39,6 @@ func (p *kafkaProducer) PublishEvent(key string, headers map[string]string, payl
 			Value: []byte(value),
 		})
 	}
-	defer p.writer.Close()
 
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
@@ -64,4 +58,8 @@ func (p *kafkaProducer) PublishEvent(key string, headers map[string]string, payl
 	}
 
 	return nil
+}
+
+func (p *kafkaProducer) Close() error {
+	return p.writer.Close()
 }

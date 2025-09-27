@@ -12,9 +12,10 @@ import (
 func main() {
 	log.Printf("Starting svc-order...")
 
-	producer := async.NewProducer(async.GetBrokers())
+	orderEventsProducer := async.NewProducer(async.GetBrokers(), "order_events")
+	defer orderEventsProducer.Close()
 
-	orderHander := handlers.NewOrderHandler(producer)
+	orderHander := handlers.NewOrderHandler(orderEventsProducer)
 
 	router := mux.NewRouter()
 
