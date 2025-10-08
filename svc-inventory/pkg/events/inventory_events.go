@@ -1,4 +1,4 @@
-package dto
+package events
 
 type ItemUnavailableEvent struct {
 	OrderID string `json:"order_id"`

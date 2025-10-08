@@ -1,19 +1,19 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 
-	"svc-inventory/async"
-	"svc-inventory/dto"
-	"svc-inventory/persistence"
+	"svc-inventory/internal/messaging"
+	"svc-inventory/internal/persistence"
+	"svc-inventory/pkg/events"
 )
 
-func HandleOrderCreated(msg async.Message) error {
+func HandleOrderCreated(msg messaging.Message) error {
 	log.Printf("Processing message: %s", string(msg.Value()))
 
-	var orderCreated dto.OrderEvent
+	var orderCreated events.OrderEvent
 	if err := json.Unmarshal(msg.Value(), &orderCreated); err != nil {
 		return err
 	}
@@ -25,8 +25,8 @@ func HandleOrderCreated(msg async.Message) error {
 	}
 
 	if status != "available" {
-		producer := async.NewProducer(async.GetBrokers())
-		itemUnavailable := dto.ItemUnavailableEvent{
+		producer := messaging.NewProducer(messaging.GetBrokers())
+		itemUnavailable := events.ItemUnavailableEvent{
 			OrderID: orderCreated.OrderID,
 			ItemID:  orderCreated.ItemID,
 			Status:  status,

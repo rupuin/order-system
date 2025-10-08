@@ -1,4 +1,4 @@
-package dto
+package events
 
 type Order struct {
 	ID           string `json:"id"`
@@ -13,4 +13,10 @@ type OrderEvent struct {
 	BuyerAddress string `json:"buyer_address"`
 	ItemID       string `json:"item_id"`
 	Status       string `json:"status"`
+}
+
+type Event struct {
+	Key     string            `json:"key"`
+	Payload map[string]string `json:"payload"`
+	Headers map[string]string `json:"headers"`
 }

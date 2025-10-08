@@ -1,4 +1,4 @@
-package async
+package messaging
 
 type Message interface {
 	Key() string

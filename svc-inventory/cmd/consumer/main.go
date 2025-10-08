@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"svc-inventory/async"
-	"svc-inventory/handlers"
+	"svc-inventory/internal/handler"
+	"svc-inventory/internal/messaging"
 	"sync"
 	"syscall"
 )
@@ -44,15 +44,15 @@ func startOrderConsumer(ctx context.Context, wg *sync.WaitGroup) {
 
 	go func() {
 		defer wg.Done()
-		consumer := async.NewConsumer(
-			async.GetBrokers(),
+		consumer := messaging.NewConsumer(
+			messaging.GetBrokers(),
 			"order_events",
 			"inventory-group",
 		)
 		defer consumer.Close()
 
 		log.Println("Starting Order consumer...")
-		consumer.ProcessMessages(ctx, handlers.HandleOrderCreated)
+		consumer.ProcessMessages(ctx, handler.HandleOrderCreated)
 		log.Println("Order Consumer stopped")
 	}()
 
