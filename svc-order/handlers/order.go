@@ -10,13 +10,17 @@ import (
 	"svc-order/persistence"
 )
 
+const StatusPending = "pending"
+
 type OrderHandler struct {
-	Producer async.Producer
+	Producer   async.Producer
+	Repository *persistence.Repository
 }
 
-func NewOrderHandler(producer async.Producer) *OrderHandler {
+func NewOrderHandler(p async.Producer, rep *persistence.Repository) *OrderHandler {
 	return &OrderHandler{
-		Producer: producer,
+		Producer:   p,
+		Repository: rep,
 	}
 }
 
@@ -29,8 +33,9 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repo := persistence.NewRepository()
-	order, err := repo.CreateOrder(orderReq.ItemID, orderReq.BuyerAddress, orderReq.Status)
+	orderReq.Status = StatusPending
+
+	order, err := h.Repository.CreateOrder(orderReq.ItemID, orderReq.BuyerAddress, orderReq.Status)
 
 	if err != nil {
 		log.Printf("failed to persist order: %v", err)
